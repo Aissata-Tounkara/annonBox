@@ -1,1 +1,0 @@
-// export default function PagePlaceholder() { return <div>Page en développementhqzii</div>; }

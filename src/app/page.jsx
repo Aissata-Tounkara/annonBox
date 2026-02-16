@@ -28,7 +28,7 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <header className="flex items-center justify-between h-14 sm:h-16">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
+              <div className="w-10 h-10 bg-linear-to-br from-primary to-secondary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
                 <svg
                   className="w-6 h-6"
                   fill="none"
@@ -52,7 +52,7 @@ export default function HomePage() {
       {/* Hero Section */}
       <div className="relative flex flex-col items-center justify-center pt-10 pb-12 lg:pt-32 lg:pb-32 px-4 overflow-hidden">
         {/* Background Glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-primary/10 rounded-full blur-[120px] -z-10 pointer-events-none"></div>
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-250 h-150 bg-primary/10 rounded-full blur-[120px] -z-10 pointer-events-none"></div>
 
         {/* Hero Content */}
         <div className="max-w-3xl w-full text-center flex flex-col items-center gap-8 relative z-10">
@@ -63,7 +63,7 @@ export default function HomePage() {
           />
 
           {/* Main Heading */}
-          <h1 className="text-center text-5xl sm:text-6xl lg:text-7xl font-black leading-[1.1] tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-[#1e272e] to-[#57606f] dark:from-white dark:to-gray-400">
+          <h1 className="text-center text-5xl sm:text-6xl lg:text-7xl font-black leading-[1.1] tracking-tighter bg-clip-text text-transparent bg-linear-to-b from-[#1e272e] to-[#57606f] dark:from-white dark:to-gray-400">
             Recevez des messages <br className="hidden sm:block"/> anonymes
           </h1>
 
@@ -248,7 +248,7 @@ export default function HomePage() {
       {/* CTA Section */}
      <div className="relative py-24 px-4 overflow-hidden">
   {/* SUPPRIMEZ CETTE LIGNE : 
-  <div className="absolute inset-0 z-0 opacity-5 dark:opacity-20 bg-gradient-to-br from-primary/20 to-secondary/20"></div>
+  <div className="absolute inset-0 z-0 opacity-5 dark:opacity-20 bg-linear-to-br from-primary/20 to-secondary/20"></div>
   */}
   <div className="max-w-4xl mx-auto text-center relative z-10">
     <h2 className="text-4xl sm:text-5xl font-black mb-6">
