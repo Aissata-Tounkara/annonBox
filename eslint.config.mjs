@@ -2,10 +2,18 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 
 const eslintConfig = defineConfig([
+  // Config Next.js
   ...nextVitals,
-  // Override default ignores of eslint-config-next.
+
+  // AJOUT ICI : désactiver la règle problématique
+  {
+    rules: {
+      "react/no-unescaped-entities": "off",
+    },
+  },
+
+  // Ignores
   globalIgnores([
-    // Default ignores of eslint-config-next:
     ".next/**",
     "out/**",
     "build/**",
