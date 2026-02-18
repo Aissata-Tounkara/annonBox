@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/lib/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -51,7 +51,7 @@ export default function DashboardPage() {
       <nav className="sticky top-0 z-50 bg-surface-light dark:bg-surface-dark border-b border-gray-200 dark:border-gray-800 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center text-white shadow-md">
+            <div className="w-9 h-9 bg-linear-to-br from-primary to-secondary rounded-lg flex items-center justify-center text-white shadow-md">
               ✉️
             </div>
             <span className="text-lg font-extrabold tracking-tight">AnonBox</span>
@@ -64,18 +64,13 @@ export default function DashboardPage() {
                 @{user.handle}
               </span>
             )}
-            <button
-              onClick={logout}
-              className="text-sm font-bold text-red-500 hover:text-red-700 transition-colors"
-            >
-              Déconnexion
-            </button>
+           
           </div>
         </div>
       </nav>
 
       {/* MAIN */}
-      <main className="flex-grow max-w-7xl mx-auto w-full px-6 py-8">
+      <main className="grow max-w-7xl mx-auto w-full px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
           {/* SIDEBAR */}
@@ -84,6 +79,11 @@ export default function DashboardPage() {
               <h1 className="text-2xl font-black mb-1">Mon Inbox</h1>
               <p className="text-sm text-text-muted-light">
                 Bonjour{user?.display_name ? `, ${user.display_name}` : ""} 👋
+                <span>
+                  Gérez vos messages reçus
+
+
+                </span>
               </p>
             </div>
 
@@ -108,7 +108,7 @@ export default function DashboardPage() {
                 className="w-full bg-background-light dark:bg-background-dark border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
               />
 
-              <button className="w-full py-3 rounded-xl bg-gradient-to-tr from-purple-600 via-pink-600 to-orange-500 text-white font-bold text-sm hover:opacity-90 transition">
+              <button className="w-full py-3 rounded-xl bg-linear-to-tr from-purple-600 via-pink-600 to-orange-500 text-white font-bold text-sm hover:opacity-90 transition">
                 Partager sur Instagram
               </button>
 
