@@ -19,7 +19,18 @@ const buttonVariants = cva(
         ghost:
           "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
         link: "text-primary underline-offset-4 hover:underline",
-      },
+        instagram:
+           "bg-gradient-to-tr from-purple-600 via-pink-600 to-orange-500 text-white font-bold hover:opacity-90",
+        whatsapp:
+           "bg-green-500 text-white font-bold hover:opacity-90",
+
+        facebook:
+           "bg-blue-600 text-white font-bold hover:opacity-90",
+            },
+        dangerSoft:
+            "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400 font-bold hover:opacity-90",
+        mutedLink:
+            "font-bold text-text-muted-light hover:text-primary",
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",
         xs: "h-6 gap-1 rounded-md px-2 text-xs has-[>svg]:px-1.5 [&_svg:not([class*='size-'])]:size-3",

@@ -10,7 +10,7 @@ export default function ProfilePage() {
     <div className="bg-background-light dark:bg-background-dark text-text-main-light dark:text-text-main-dark transition-colors duration-200 min-h-screen flex flex-col overflow-x-hidden font-display">
 
       {/* Background blur effect */}
-      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-primary/10 rounded-full blur-[120px] -z-10 pointer-events-none"></div>
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-250 h-150 bg-primary/10 rounded-full blur-[120px] -z-10 pointer-events-none"></div>
 
       {/* HEADER */}
       <header className="w-full py-6 flex justify-center items-center z-10">
@@ -18,7 +18,7 @@ export default function ProfilePage() {
           href="/"
           className="flex items-center gap-2 hover:opacity-80 transition-opacity"
         >
-          <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
+          <div className="w-10 h-10 bg-linear-to-br from-primary to-secondary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
             <span className="text-2xl">✉️</span>
           </div>
           <h2 className="text-xl font-bold tracking-tight">AnonBox</h2>
@@ -26,14 +26,14 @@ export default function ProfilePage() {
       </header>
 
       {/* MAIN */}
-      <main className="flex-grow flex items-center justify-center px-4 py-8 z-10">
+      <main className="grow flex items-center justify-center px-4 py-8 z-10">
         <div className="w-full max-w-lg bg-white dark:bg-surface-dark/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 dark:border-white/5 overflow-hidden ring-1 ring-black/5 dark:ring-white/10 animate-fadeIn">
 
           {/* PROFILE SECTION */}
           <div className="pt-10 pb-6 px-6 flex flex-col items-center text-center relative">
 
             <div className="relative group mb-5">
-              <div className="absolute -inset-1 bg-gradient-to-br from-primary to-secondary rounded-full opacity-70 blur group-hover:opacity-100 transition duration-500"></div>
+              <div className="absolute -inset-1 bg-linear-to-br from-primary to-secondary rounded-full opacity-70 blur group-hover:opacity-100 transition duration-500"></div>
 
               <div className="relative w-28 h-28 rounded-full bg-surface-light dark:bg-[#15191e] p-1.5 flex items-center justify-center">
                 <div className="w-full h-full rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
@@ -99,7 +99,7 @@ export default function ProfilePage() {
           href="/create"
           className="group inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white dark:bg-surface-dark border border-surface-light dark:border-gray-800 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
         >
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-text-main-light to-primary  dark:to-primary-hover font-bold text-sm sm:text-base">
+          <span className="bg-clip-text text-transparent bg-linear-to-r from-text-main-light to-primary  dark:to-primary-hover font-bold text-sm sm:text-base">
             Crée ta propre page de messages anonymes !
           </span>
           <span className="text-primary group-hover:translate-x-1 transition-transform">
