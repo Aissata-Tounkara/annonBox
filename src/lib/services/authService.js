@@ -1,5 +1,5 @@
 import { createUser, verifyToken } from '@/lib/api/endpoints'
-import { STORAGE_KEYS } from '@/lib/utils/constants'
+import { ROUTES, STORAGE_KEYS } from '@/lib/utils/constants'
 
 /**
  * Persiste la session utilisateur dans le localStorage
@@ -52,7 +52,7 @@ async function register(data) {
   return {
     user,
     private_token,
-    inboxUrl: `/inbox/${private_token}`,
+    inboxUrl: ROUTES.INBOX(private_token),
   }
 }
 

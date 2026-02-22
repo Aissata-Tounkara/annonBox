@@ -1,94 +1,118 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { flushSync } from "react-dom";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/hooks/useAuth";
-import { useInbox } from "@/lib/hooks/useMessages";
-import { useMessageActions } from "@/lib/hooks/useMessages";
-import { Loader2 } from "lucide-react";
+import { useInbox, useMessageActions } from "@/lib/hooks/useMessages";
+import { usePrompts } from "@/lib/hooks/usePrompts";
+import { SharePromptCard } from "@/components/promt/SharePromptCard";
+import SidebarPanel from "@/components/layout/SidebarPanel";
+import AppHeader from "@/components/layout/AppHeader";
+import AppFooter from "@/components/layout/AppFooter";
+import MessageCard from "@/components/shared/MessageCard";
+import { Loader2, ChevronUp, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { MESSAGE_STATUS, ROUTES, TIMEOUTS } from "@/lib/utils/constants";
 
 export default function DashboardPage() {
   const { token } = useParams();
-  const router = useRouter();
-  const { user, verifySession, logout, isLoading: authLoading } = useAuth();
+  const router    = useRouter();
+  const { user, verifySession, isLoading: authLoading } = useAuth();
 
-  const [pageReady, setPageReady] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [activeTab, setActiveTab] = useState("all"); // "all" | "unread"
+  const [pageReady, setPageReady]           = useState(false);
+  const [isScrolled, setIsScrolled]         = useState(false);
+  const [activeTab, setActiveTab]           = useState(MESSAGE_STATUS.ALL);
+  const [promptInput, setPromptInput]       = useState("");
+  const [showPromptForm, setShowPromptForm] = useState(false);
+  const [sharePromptId, setSharePromptId]   = useState(null);
+  const [copiedLink, setCopiedLink]         = useState(false);
+  const [showShareCard, setShowShareCard]   = useState(false);
+  const [sidebarOpen, setSidebarOpen]       = useState(false);
 
-  // ─── Inbox hook ─────────────────────────────────────────────────────────
+  // ── Fix hydration ────────────────────────────────────────────────────────
+  const [origin, setOrigin] = useState("");
+  useEffect(() => { setOrigin(window.location.origin); }, []);
+
+  // ── Hooks ────────────────────────────────────────────────────────────────
   const {
-    messages,
-    unreadCount,
-    totalCount,
-    loading: inboxLoading,
-    error: inboxError,
-    loadInbox,
-    loadUnread,
+    messages, unreadCount, totalCount,
+    loading: inboxLoading, error: inboxError,
+    loadInbox, loadUnread,
   } = useInbox();
 
-  // ─── Message actions hook ────────────────────────────────────────────────
-  // onSuccess : recharge l'inbox selon l'onglet actif
+  const {
+    prompts, loading: promptsLoading, error: promptsError,
+    loadPrompts, addPrompt, removePrompt, sharePrompt,
+    randomQuestion, pickRandomQuestion,
+  } = usePrompts(user?.handle);
+
+  // Synchro question aléatoire → textarea uniquement si le formulaire est ouvert
+  const showPromptFormRef = useRef(showPromptForm);
+  useEffect(() => { showPromptFormRef.current = showPromptForm; }, [showPromptForm]);
+  useEffect(() => {
+    if (randomQuestion && showPromptFormRef.current) setPromptInput(randomQuestion);
+  }, [randomQuestion]);
+
+  // Sélectionner le premier prompt par défaut
+  useEffect(() => {
+    if (prompts.length > 0 && !sharePromptId) setSharePromptId(prompts[0].id);
+  }, [prompts]); // eslint-disable-line
+
   const refreshInbox = useCallback(() => {
-    if (activeTab === "unread") {
-      loadUnread();
-    } else {
-      loadInbox();
-    }
+    if (activeTab === MESSAGE_STATUS.UNREAD) loadUnread(); else loadInbox();
   }, [activeTab, loadInbox, loadUnread]);
 
   const {
-    markAsRead,
-    remove,
-    share,
-    generateCard,
-    loading: actionLoading,
-    error: actionError,
+    markAsRead, remove, share, generateCard,
+    loading: actionLoading, error: actionError,
   } = useMessageActions(refreshInbox);
 
-  // ─── Auth guard ──────────────────────────────────────────────────────────
+  // ── Auth + init ──────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!token) {
-      router.replace("/");
-      return;
-    }
+    if (!token) { router.replace(ROUTES.HOME); return; }
+    verifySession(token).then(() => setPageReady(true)).catch(() => {});
+  }, [token]); // eslint-disable-line
 
-    verifySession(token)
-      .then(() => {
-        setPageReady(true);
-      })
-      .catch(() => {
-        // verifySession gère la redirection
-      });
-  }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ─── Chargement initial de l'inbox ───────────────────────────────────────
   useEffect(() => {
-    if (pageReady) {
-      loadInbox();
-    }
-  }, [pageReady]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (pageReady) { loadInbox(); loadPrompts(); }
+  }, [pageReady]); // eslint-disable-line
 
-  // ─── Scroll shadow ───────────────────────────────────────────────────────
   useEffect(() => {
-    const onScroll = () => setIsScrolled(window.scrollY > 4);
-    window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
+    const fn = () => setIsScrolled(window.scrollY > 4);
+    window.addEventListener("scroll", fn);
+    return () => window.removeEventListener("scroll", fn);
   }, []);
 
-  // ─── Changement d'onglet ─────────────────────────────────────────────────
+  // ── Handlers ─────────────────────────────────────────────────────────────
   const handleTabChange = (tab) => {
     setActiveTab(tab);
-    if (tab === "unread") {
-      loadUnread();
-    } else {
-      loadInbox();
-    }
+    if (tab === MESSAGE_STATUS.UNREAD) loadUnread(); else loadInbox();
   };
 
-  // ─── Écran de chargement ─────────────────────────────────────────────────
+  const handleAddPrompt = async () => {
+    if (!promptInput.trim()) return;
+    const created = await addPrompt(promptInput);
+    flushSync(() => { setPromptInput(""); setShowPromptForm(false); });
+    if (created?.id) setSharePromptId(created.id);
+  };
+
+  const handleOpenShareCard = () => {
+    if (selectedPrompt) sharePrompt(selectedPrompt.id);
+    setShowShareCard(true);
+  };
+
+  const handleSocialShare = () => {
+    if (selectedPrompt) sharePrompt(selectedPrompt.id);
+  };
+
+  const copyShareLink = () => {
+    navigator.clipboard.writeText(shareLink);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), TIMEOUTS.COPY_FEEDBACK);
+  };
+
+  // ── Loading ───────────────────────────────────────────────────────────────
   if (!pageReady || authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark">
@@ -100,171 +124,166 @@ export default function DashboardPage() {
     );
   }
 
-  const publicLink = `${typeof window !== "undefined" ? window.location.origin : ""}/u/${user?.handle}`;
+  // ── Computed ──────────────────────────────────────────────────────────────
+  const publicLink     = `${origin}${ROUTES.PUBLIC_PROFILE(user?.handle ?? "")}`;
+  const selectedPrompt = prompts.find((p) => p.id === sharePromptId);
+  const shareLink      = selectedPrompt?.share_url ?? publicLink;
+  const whatsappText   = selectedPrompt
+    ? `Réponds à ma question anonymement :\n"${selectedPrompt.question_text}"\n👉 ${shareLink}`
+    : `Envoie-moi un message anonyme 👉 ${shareLink}`;
+
+  // Props communes pour SidebarPanel
+  const sidebarProps = {
+    stats: { totalCount, unreadCount },
+    prompts,
+    promptsLoading,
+    promptsError,
+    promptInput,
+    setPromptInput,
+    showPromptForm,
+    setShowPromptForm,
+    sharePromptId,
+    setSharePromptId,
+    selectedPrompt,
+    copiedLink,
+    shareLink,
+    whatsappText,
+    userHandle: user?.handle,
+    onAddPrompt: handleAddPrompt,
+    onRemovePrompt: removePrompt,
+    onCopyLink: copyShareLink,
+    onSocialShare: handleSocialShare,
+    onPickRandom: pickRandomQuestion,
+    onOpenShareCard: handleOpenShareCard,
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background-light dark:bg-background-dark">
-      {/* NAVBAR */}
-      <div
-        className={`w-full border-b border-surface-light dark:border-surface-dark bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md sticky top-0 z-50 transition-all duration-300 ${
-          isScrolled ? "shadow-lg" : ""
-        }`}
-      >
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <header className="flex items-center justify-between h-14 sm:h-16">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-linear-to-br from-primary to-secondary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                  />
-                </svg>
-              </div>
-              <h2 className="text-xl font-bold tracking-tight">AnonBox</h2>
-            </div>
 
-            <div className="flex items-center gap-4">
-              {user && (
-                <span className="text-sm font-semibold text-text-muted-light hidden sm:block">
-                  @{user.handle}
-                </span>
-              )}
-            </div>
-          </header>
-        </div>
-      </div>
+      {/* Modal carte partage */}
+      {showShareCard && (
+        <SharePromptCard
+          prompt={selectedPrompt}
+          publicLink={publicLink}
+          userHandle={user?.handle}
+          onClose={() => setShowShareCard(false)}
+        />
+      )}
 
-      {/* MAIN */}
-      <main className="grow max-w-7xl mx-auto w-full px-6 py-8">
-        <div className="grid-cols-1 lg:grid-cols-12 gap-8 flex justify-between">
-
-          {/* SIDEBAR */}
-          <div className="lg:col-span-3 space-y-6">
-            <div>
-              <h1 className="text-2xl font-black mb-1">Mon Inbox</h1>
-              <p className="text-sm text-text-muted-light">
-                Bonjour{user?.display_name ? `, ${user.display_name}` : ""} 👋{" "}
-                <span>Gérez vos messages reçus</span>
-              </p>
-            </div>
-
-            {/* STATS */}
-            <Card className="rounded-2xl w-60">
-              <CardContent>
-                <p className="text-xs uppercase font-bold text-text-muted-light">Total Reçus</p>
-                <p className="text-3xl font-black mt-2">{totalCount}</p>
-                {unreadCount > 0 && (
-                  <p className="text-xs text-primary font-semibold mt-1">{unreadCount} non lu(s)</p>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* SHARE */}
-            <div className="bg-surface-light dark:bg-surface-dark p-5 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 space-y-4 w-60">
-              <h3 className="font-black text-lg">Partager ma page</h3>
-              <p>Obtenez plus de messages anonymes !</p>
-              <span>Votre question</span>
-
-              <textarea
-                rows="2"
-                placeholder="Écrivez votre propre question ici"
-                className="w-full bg-background-light dark:bg-background-dark border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
-              />
-              <button className="text-sm font-bold text-text-muted-light hover:text-primary transition">
-                Générer une question aléatoire
-              </button>
-
-              <Button variant="instagram" asChild>
-                <a href="https://www.instagram.com/direct/inbox/" target="_blank" rel="noopener noreferrer">
-                  Partager sur Instagram
-                </a>
-              </Button>
-
-              <div className="grid grid-cols-2 gap-3">
-                <Button variant="whatsapp" asChild>
-                  <a
-                    href={`https://api.whatsapp.com/send?text=${encodeURIComponent("Viens voir mon lien:" + publicLink)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full rounded-xl py-2.5 text-xs cursor-cell"
-                  >
-                    WhatsApp
-                  </a>
-                </Button>
-
-                <Button variant="facebook" asChild>
-                  <a
-                    href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(publicLink)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Facebook
-                  </a>
-                </Button>
-              </div>
-            </div>
-
-            {/* SECURITY */}
-            <div className="bg-surface-light dark:bg-surface-dark p-5 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 space-y-3">
-              <p className="text-xs uppercase font-bold text-text-muted-light">Sécurité du lien</p>
-              <Button
-                variant="dangerSoft"
-                size="sm"
-                className="w-full py-2.5 rounded-xl bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400 font-bold text-sm hover:opacity-90 transition"
-              >
-                Régénérer mon lien
-              </Button>
-              <p className="text-xs text-text-muted-light opacity-70 leading-relaxed">
-                ⚠️ L'ancien lien sera immédiatement invalidé.
-              </p>
-            </div>
+      <AppHeader
+        variant="dashboard"
+        withShadow={isScrolled}
+        rightSlot={(
+          <div className="flex items-center gap-3">
+            {user && (
+              <span className="text-sm font-semibold text-text-muted-light hidden sm:block">
+                @{user.handle}
+              </span>
+            )}
+            <button
+              onClick={() => setSidebarOpen((v) => !v)}
+              className="lg:hidden flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 transition"
+            >
+              <Menu size={14} />
+              Partager
+            </button>
           </div>
+        )}
+      />
 
-          {/* MESSAGES */}
-          <div className="lg:col-span-9 space-y-6">
+      {/* ── PANNEAU MOBILE ── */}
+      {sidebarOpen && (
+        <div className="lg:hidden w-full bg-background-light dark:bg-background-dark border-b border-gray-200 dark:border-gray-800 z-40">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+            <div className="flex items-center justify-between mb-4">
+              <p className="font-black text-base">Partager & Stats</p>
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-text-muted-light hover:text-primary transition"
+              >
+                <ChevronUp size={14} />
+              </button>
+            </div>
+            <SidebarPanel {...sidebarProps} />
+          </div>
+        </div>
+      )}
+
+      {/* ── MAIN ── */}
+      <main className="grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="flex flex-col lg:flex-row gap-8">
+
+          {/* ── SIDEBAR desktop ── */}
+          <aside className="hidden lg:block w-72 xl:w-80 shrink-0">
+            <div className="sticky top-24 space-y-4">
+              <div>
+                <h1 className="text-2xl font-black mb-1">Mon Inbox</h1>
+                <p className="text-sm text-text-muted-light">
+                  Bonjour{user?.display_name ? `, ${user.display_name}` : ""} 👋{" "}
+                  <span>Gérez vos messages</span>
+                </p>
+              </div>
+              <SidebarPanel {...sidebarProps} />
+            </div>
+          </aside>
+
+          {/* ── MESSAGES ── */}
+          <div className="flex-1 min-w-0 space-y-5">
+
+            {/* En-tête mobile */}
+            <div className="lg:hidden flex items-center justify-between">
+              <div>
+                <h1 className="text-xl font-black">Mon Inbox</h1>
+                <p className="text-xs text-text-muted-light mt-0.5">
+                  Bonjour{user?.display_name ? `, ${user.display_name}` : ""} 👋
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-black">{totalCount}</p>
+                <p className="text-xs text-text-muted-light">messages</p>
+                {unreadCount > 0 && (
+                  <p className="text-xs text-primary font-bold">{unreadCount} non lus</p>
+                )}
+              </div>
+            </div>
 
             {/* TABS */}
-            <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-2">
-              <div className="flex gap-6">
-                <button
-                  onClick={() => handleTabChange("all")}
-                  className={`border-b-2 font-bold text-sm pb-2 transition ${
-                    activeTab === "all"
-                      ? "border-primary text-primary"
-                      : "border-transparent text-text-muted-light"
-                  }`}
-                >
-                  Tous les messages
-                </button>
-                <button
-                  onClick={() => handleTabChange("unread")}
-                  className={`font-medium text-sm pb-2 border-b-2 transition ${
-                    activeTab === "unread"
-                      ? "border-primary text-primary"
-                      : "border-transparent text-text-muted-light"
-                  }`}
-                >
-                  Non lus
-                  {unreadCount > 0 && (
-                    <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-primary text-white text-xs">
-                      {unreadCount}
-                    </span>
-                  )}
-                </button>
-              </div>
+            <div className="flex items-center gap-6 border-b border-gray-200 dark:border-gray-800">
+              <button
+                onClick={() => handleTabChange(MESSAGE_STATUS.ALL)}
+                className={`border-b-2 font-bold text-sm pb-2.5 transition ${
+                  activeTab === MESSAGE_STATUS.ALL
+                    ? "border-primary text-primary"
+                    : "border-transparent text-text-muted-light"
+                }`}
+              >
+                Tous les messages
+              </button>
+              <button
+                onClick={() => handleTabChange(MESSAGE_STATUS.UNREAD)}
+                className={`font-medium text-sm pb-2.5 border-b-2 transition ${
+                  activeTab === MESSAGE_STATUS.UNREAD
+                    ? "border-primary text-primary"
+                    : "border-transparent text-text-muted-light"
+                }`}
+              >
+                Non lus
+                {unreadCount > 0 && (
+                  <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-primary text-white text-xs">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
             </div>
 
-            {/* ERREUR */}
+            {/* Erreurs */}
             {(inboxError || actionError) && (
               <div className="text-sm text-red-500 font-semibold px-1">
                 {inboxError || actionError}
               </div>
             )}
 
-            {/* CHARGEMENT */}
+            {/* Messages */}
             {inboxLoading ? (
               <div className="flex justify-center py-16">
                 <Loader2 size={32} className="animate-spin text-primary" />
@@ -280,7 +299,7 @@ export default function DashboardPage() {
               </div>
             ) : (
               <>
-                <div className="flex flex-wrap gap-5">
+                <div className="flex flex-wrap gap-3">
                   {messages.map((msg) => (
                     <MessageCard
                       key={msg.id}
@@ -294,7 +313,7 @@ export default function DashboardPage() {
                   ))}
                 </div>
 
-                <div className="flex justify-center pt-6">
+                <div className="flex justify-center pt-4">
                   <Button
                     variant="mutedLink"
                     size="default"
@@ -309,74 +328,8 @@ export default function DashboardPage() {
           </div>
         </div>
       </main>
+
+      <AppFooter variant="default" />
     </div>
-  );
-}
-
-// ─── Sous-composant MessageCard ──────────────────────────────────────────────
-
-function MessageCard({ message, onMarkAsRead, onDelete, onShare, onGenerateCard, disabled }) {
-  const isUnread = message.status === "unread";
-
-  return (
-    <Card className="relative overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800 shadow-md w-80">
-      {/* Bande latérale colorée */}
-      <div
-        className={`absolute left-0 top-0 h-full w-1 rounded-l-2xl ${
-          isUnread ? "bg-red-500" : "bg-gray-300 dark:bg-gray-600"
-        }`}
-      />
-
-      <CardHeader>
-        <CardTitle
-          className={`uppercase text-sm tracking-wider ${
-            isUnread ? "text-red-500" : "text-text-muted-light"
-          }`}
-        >
-          {isUnread ? "Nouveau" : "Lu"}
-        </CardTitle>
-      </CardHeader>
-
-      <CardContent>
-        <p className="text-base font-extrabold leading-snug">"{message.content}"</p>
-        {message.response_text && (
-          <p className="mt-3 text-sm text-text-muted-light italic border-l-2 border-primary pl-3">
-            Réponse : {message.response_text}
-          </p>
-        )}
-      </CardContent>
-
-      <CardFooter className="flex justify-between flex-wrap gap-2">
-        {isUnread && (
-          <Button
-            variant="ghost"
-            className="text-green-600 hover:text-green-700"
-            onClick={onMarkAsRead}
-            disabled={disabled}
-          >
-            Marquer comme lu
-          </Button>
-        )}
-
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-text-muted-light hover:text-primary"
-          onClick={onShare}
-          disabled={disabled}
-        >
-          Partager
-        </Button>
-
-        <Button
-          variant="destructive"
-          size="sm"
-          onClick={onDelete}
-          disabled={disabled}
-        >
-          Supprimer
-        </Button>
-      </CardFooter>
-    </Card>
   );
 }

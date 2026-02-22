@@ -1,10 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Mail, UserPlus, AtSign, ArrowRight, Loader2 } from "lucide-react";
+import { UserPlus, AtSign, ArrowRight, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/hooks/useAuth";
+import AppHeader from "@/components/layout/AppHeader";
+import AppFooter from "@/components/layout/AppFooter";
+import { LIMITS } from "@/lib/utils/constants";
 
 
 export default function Home() {
@@ -21,8 +24,8 @@ export default function Home() {
       setFieldError("Le nom d'utilisateur est requis.");
       return;
     }
-    if (trimmed.length < 2) {
-      setFieldError("Minimum 2 caractères.");
+    if (trimmed.length < LIMITS.DISPLAY_NAME_MIN_LENGTH) {
+      setFieldError(`Minimum ${LIMITS.DISPLAY_NAME_MIN_LENGTH} caractères.`);
       return;
     }
 
@@ -41,19 +44,7 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen bg-background-light">
 
-      {/* HEADER */}
-      <div className="w-full border-b border-surface-light bg-background-light/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6">
-          <header className="flex items-center h-20">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-linear-to-br from-primary to-secondary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
-                <Mail size={22} />
-              </div>
-              <h2 className="text-xl font-bold tracking-tight">AnonBox</h2>
-            </div>
-          </header>
-        </div>
-      </div>
+      <AppHeader variant="default" />
 
       {/* MAIN */}
       <main className="grow flex items-center justify-center p-4 relative">
@@ -156,25 +147,7 @@ export default function Home() {
         </div>
       </main>
 
-      {/* FOOTER */}
-      <footer className="border-t border-surface-light py-8 px-4 mt-auto">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-text-main-light rounded-lg flex items-center justify-center text-white">
-              <Mail size={16} />
-            </div>
-            <span className="font-bold text-lg">AnonBox</span>
-          </div>
-
-          <div className="flex flex-wrap justify-center gap-8 text-sm font-medium text-text-muted-light">
-            <a className="hover:text-primary transition-colors" href="#">Politique de confidentialité</a>
-            <a className="hover:text-primary transition-colors" href="#">Conditions d'utilisation</a>
-            <a className="hover:text-primary transition-colors" href="#">Centre de sécurité</a>
-          </div>
-
-          <div className="text-sm text-text-muted-light opacity-60">© 2026 AnonBox.</div>
-        </div>
-      </footer>
+      <AppFooter variant="default" />
 
     </div>
   );

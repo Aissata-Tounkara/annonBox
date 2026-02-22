@@ -4,7 +4,10 @@ import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import AnimatedBadge from '@/components/ui/AnimatedBadge'
 import { Button } from "@/components/ui/button"
-
+import FloatingCard from '@/components/ui/FloatingCard'
+import StepCard from '@/components/ui/StepCard'
+import AppHeader from '@/components/layout/AppHeader'
+import AppFooter from '@/components/layout/AppFooter'
 
 export default function HomePage() {
   const [isScrolled, setIsScrolled] = useState(false)
@@ -19,35 +22,7 @@ export default function HomePage() {
 
   return (
     <>
-      {/* Header */}
-      <div
-        className={`w-full border-b border-surface-light dark:border-surface-dark bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md sticky top-0 z-50 transition-all duration-300 ${
-          isScrolled ? 'shadow-lg' : ''
-        }`}
-      >
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <header className="flex items-center justify-between h-14 sm:h-16">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-linear-to-br from-primary to-secondary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                  />
-                </svg>
-              </div>
-              <h2 className="text-xl font-bold tracking-tight">AnonBox</h2>
-            </div>
-          </header>
-        </div>
-      </div>
+      <AppHeader variant="dashboard" withShadow={isScrolled} />
 
       {/* Hero Section */}
       <div className="relative flex flex-col items-center justify-center pt-10 pb-12 lg:pt-32 lg:pb-32 px-4 overflow-hidden">
@@ -266,103 +241,7 @@ export default function HomePage() {
     </Link>
   </div>
 </div>
-      {/* Footer */}
-     <footer className="border-t border-surface-light dark:border-surface-dark bg-background-light dark:bg-background-dark py-12 px-4">
-  <div className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-6">
-    <div className="flex items-center gap-2">
-      <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center text-white">
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-        </svg>
-      </div>
-      <span className="font-bold text-lg">AnonBox</span>
-    </div>
-    
-    <div className="flex  gap-3 text-sm font-medium text-text-muted-light dark:text-text-muted-dark">
-      <Link className="hover:text-primary transition-colors" href="#">
-        Politique de confidentialité
-      </Link>
-      <Link className="hover:text-primary transition-colors" href="#">
-        Conditions d'utilisation
-      </Link>
-      <Link className="hover:text-primary transition-colors" href="#">
-        Centre de sécurité
-      </Link>
-      <Link className="hover:text-primary transition-colors" href="#">
-        Aide
-      </Link>
-    </div>
-    
-    <div className="text-sm text-text-muted-light dark:text-text-muted-dark opacity-60">
-      © 2026 AnonBox. Tous droits réservés.
-    </div>
-  </div>
-</footer>
+      <AppFooter variant="landing" />
     </>
-  )
-}
-
-// Floating Card Component
-function FloatingCard({ children, text, position, rotation, color, delay }) {
-  const bgColor = color === 'primary' 
-    ? 'bg-primary' 
-    : color === 'secondary' 
-      ? 'bg-secondary' 
-      : 'bg-white';
-  
-  const textColor = color === 'primary' || color === 'secondary' 
-    ? 'text-white' 
-    : 'text-foreground';
-
-  return (
-    <div
-      className={`absolute ${position} ${bgColor} ${textColor} p-6 rounded-2xl shadow-xl border border-surface-light dark:border-gray-800 max-w-xs w-full`}
-      style={{
-        '--rotation': rotation,
-        animation: `float 6s ease-in-out infinite ${delay}`,
-      }}
-    >
-      {children ? (
-        children
-      ) : (
-        <>
-          <p className="text-lg font-bold mb-2">{text}</p>
-          <div
-            className={`h-2 w-20 rounded-full ${
-              color === 'primary' ? 'bg-primary/20' : 'bg-secondary/20'
-            }`}
-          ></div>
-        </>
-      )}
-    </div>
-  )
-}
-
-// Step Card Component
-function StepCard({ icon, title, description, color }) {
-  const colorClasses = {
-    blue: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
-    purple:
-      'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400',
-    green:
-      'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
-  }
-
-  return (
-    <div className="bg-background-light dark:bg-background-dark p-6 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm flex items-start gap-4 hover:shadow-md transition-shadow">
-      <div
-        className={`w-12 h-12 rounded-xl ${colorClasses[color]} flex items-center justify-center shrink-0`}
-      >
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          {icon}
-        </svg>
-      </div>
-      <div>
-        <h3 className="text-xl font-bold mb-1">{title}</h3>
-        <p className="text-text-muted-light dark:text-text-muted-dark">
-          {description}
-        </p>
-      </div>
-    </div>
   )
 }

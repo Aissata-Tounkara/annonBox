@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { authService } from '@/lib/services/authService'
+import { ROUTES } from '@/lib/utils/constants'
 
 export function useAuth() {
   const router = useRouter()
@@ -37,7 +38,7 @@ export function useAuth() {
 
       // ✅ Chemin corrigé : /save (et non /save-access)
       router.push(
-        `/save?token=${encodeURIComponent(private_token)}&handle=${encodeURIComponent(newUser.handle)}`
+        `${ROUTES.SAVE}?token=${encodeURIComponent(private_token)}&handle=${encodeURIComponent(newUser.handle)}`
       )
     } catch (err) {
       setError(err.message || 'Une erreur est survenue lors de la création.')
@@ -58,7 +59,7 @@ export function useAuth() {
       setUser(loggedUser)
       setPrivateToken(token)
 
-      router.push(`/inbox/${token}`)
+      router.push(ROUTES.INBOX(token))
       return loggedUser
     } catch (err) {
       setError(err.message || 'Token invalide ou expiré.')
@@ -82,7 +83,7 @@ export function useAuth() {
       authService.logout()
       setUser(null)
       setPrivateToken(null)
-      router.push('/')
+      router.push(ROUTES.HOME)
       throw err
     } finally {
       setIsLoading(false)
@@ -94,7 +95,7 @@ export function useAuth() {
     authService.logout()
     setUser(null)
     setPrivateToken(null)
-    router.push('/')
+    router.push(ROUTES.HOME)
   }, [router])
 
   return {

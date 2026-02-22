@@ -6,6 +6,9 @@ import { Slot } from "radix-ui";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import AppHeader from "@/components/layout/AppHeader";
+import AppFooter from "@/components/layout/AppFooter";
+import { ROUTES, TIMEOUTS } from "@/lib/utils/constants";
 
 function cn(...classes) {
   return classes.filter(Boolean).join(" ");
@@ -60,11 +63,11 @@ export default function SavePage() {
   const handle = searchParams.get("handle");
 
   const origin   = typeof window !== "undefined" ? window.location.origin : "https://anonbox.com";
-  const inboxUrl = token ? `${origin}/inbox/${token}` : null;
+  const inboxUrl = token ? `${origin}${ROUTES.INBOX(token)}` : null;
 
   // Guard : pas de token → retour à l'accueil
   useEffect(() => {
-    if (!token) router.replace("/");
+    if (!token) router.replace(ROUTES.HOME);
   }, [token, router]);
 
   if (!token) return null;
@@ -73,7 +76,7 @@ export default function SavePage() {
     if (!inboxUrl) return;
     navigator.clipboard.writeText(inboxUrl);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), TIMEOUTS.COPY_FEEDBACK);
   };
 
   return (
@@ -86,19 +89,7 @@ export default function SavePage() {
 
       <div className="min-h-screen flex flex-col bg-[#f1f2f6] dark:bg-[#0f1115] text-[#1e272e] dark:text-[#dfe4ea] transition-colors duration-200 overflow-x-hidden">
 
-        {/* HEADER */}
-        <div className="w-full border-b border-gray-200 dark:border-[#1e2126] bg-white dark:bg-[#0f1115] sticky top-0 z-50">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <header className="flex items-center h-16 sm:h-20">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-linear-to-br from-[#ff4757] to-[#2ed573] rounded-xl flex items-center justify-center text-white shadow-lg shadow-[#ff4757]/20">
-                  <Icon name="mail" className="text-2xl" />
-                </div>
-                <h2 className="text-xl font-bold tracking-tight">AnonBox</h2>
-              </div>
-            </header>
-          </div>
-        </div>
+        <AppHeader variant="save" />
 
         {/* MAIN */}
         <main className="grow flex items-center justify-center py-12 px-4 sm:px-6">
@@ -203,7 +194,7 @@ export default function SavePage() {
                 asChild
                 className="h-16 px-10 sm:px-14 rounded-full bg-[#ff4757] hover:bg-[#ff6b81] !text-white! text-lg sm:text-xl font-bold shadow-xl shadow-[#ff4757]/30 transition-all transform hover:-translate-y-1 active:translate-y-0"
               >
-                <Link href={`/inbox/${token}`}>
+                <Link href={ROUTES.INBOX(token)}>
                   Accéder à mon inbox
                   <Icon name="arrow_forward" />
                 </Link>
@@ -213,16 +204,7 @@ export default function SavePage() {
           </div>
         </main>
 
-        {/* FOOTER */}
-        <footer className="border-t border-gray-200 dark:border-[#1e2126] bg-white dark:bg-[#0f1115] py-8 px-4 mt-auto">
-          <div className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-[#57606f] dark:text-[#a4b0be]">
-            <div className="flex items-center gap-2 opacity-70">
-              <Icon name="verified_user" className="text-lg" />
-              <span>Connexion sécurisée</span>
-            </div>
-            <div className="text-xs opacity-50">© 2026 AnonBox.</div>
-          </div>
-        </footer>
+        <AppFooter variant="minimal" />
 
       </div>
     </>
