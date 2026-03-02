@@ -75,7 +75,12 @@ export function SharePromptCard({
   const [busy,   setBusy]   = useState(false);
   const [guide,  setGuide]  = useState(null);
 
-  const shareLink    = prompt?.share_url ?? publicLink;
+  const messagePromptShareLink =
+    message?.prompt?.share_url ??
+    (message?.prompt?.id
+      ? `${publicLink}?q=${message.prompt.id}`
+      : null);
+  const shareLink    = prompt?.share_url ?? messagePromptShareLink ?? publicLink;
   const cardText =
     message?.anonymous_content ??
     prompt?.question_text ??
