@@ -109,7 +109,7 @@ export function SharePromptCard({
 
   const buildShareText = useCallback((url) => (
     isMessage
-      ? `J'ai reçu ce message anonyme 👇\n\n"${cardText}"\n\n👉 ${url}`
+      ? `J'ai reçu ce message anonyme 👇\nEnvoyez moi egalement vos message\n\n"${cardText}"\n\n👉 ${url}`
       : `${cardText}\n\n👉 Réponds anonymement : ${url}`
   ), [cardText, isMessage]);
 
