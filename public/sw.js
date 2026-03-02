@@ -1,6 +1,7 @@
-const CACHE_NAME = "anonbox-pwa-v1";
+const CACHE_NAME = "anonbox-pwa-v2";
 const PRECACHE_URLS = [
   "/",
+  "/launch",
   "/offline",
   "/manifest.webmanifest",
   "/pwa/icon-192.png",

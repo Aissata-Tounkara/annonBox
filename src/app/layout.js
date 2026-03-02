@@ -1,5 +1,6 @@
 import { Manrope } from 'next/font/google'
 import PwaRegistrar from '@/components/pwa/PwaRegistrar'
+import PwaInstallPrompt from '@/components/pwa/PwaInstallPrompt'
 import './globals.css'
 
 const manrope = Manrope({
@@ -76,6 +77,7 @@ export default function RootLayout({ children }) {
     <html lang="fr" className="light">
       <body className={`${manrope.variable} font-display antialiased`}>
         <PwaRegistrar />
+        <PwaInstallPrompt />
         <div className="min-h-screen flex flex-col">{children}</div>
       </body>
     </html>

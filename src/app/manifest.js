@@ -5,7 +5,7 @@ export default function manifest() {
     short_name: 'AnonBox',
     description:
       "Recevez des avis honnêtes, des confessions et des questions brûlantes de vos amis. 100% anonyme et sécurisé.",
-    start_url: '/',
+    start_url: '/launch',
     scope: '/',
     display: 'standalone',
     display_override: ['standalone', 'minimal-ui', 'browser'],
