@@ -56,6 +56,7 @@ function canvasToBlob(canvas) {
 
 export function SharePromptCard({ prompt, message, publicLink, userHandle, onClose }) {
   const cardRef = useRef(null);
+  const shareCacheRef = useRef({ key: "", url: "" });
 
   const [themeIdx, setThemeIdx] = useState(0);
   const theme = THEMES[themeIdx];
@@ -69,8 +70,9 @@ export function SharePromptCard({ prompt, message, publicLink, userHandle, onClo
     message?.anonymous_content ??
     prompt?.question_text ??
     "Envoie-moi un message anonyme !";
-    const isMessage = !!message;
+  const isMessage = !!message;
   const filename     = `anonbox-${userHandle ?? "question"}.png`;
+  const shareCacheKey = `${theme.id}|${isMessage ? "message" : "prompt"}|${cardText}|${shareLink}`;
 
   useEffect(() => {
     setThemeIdx(Math.floor(Math.random() * THEMES.length));
@@ -90,6 +92,79 @@ export function SharePromptCard({ prompt, message, publicLink, userHandle, onClo
     setTimeout(() => setCopied(false), 2500);
   }, [shareLink]);
 
+  const buildShareText = useCallback((url) => (
+    isMessage
+      ? `J'ai reçu ce message anonyme 👇\n\n"${cardText}"\n\n👉 ${url}`
+      : `${cardText}\n\n👉 Réponds anonymement : ${url}`
+  ), [cardText, isMessage]);
+
+  const createSharePage = useCallback(async () => {
+    if (shareCacheRef.current.key === shareCacheKey && shareCacheRef.current.url) {
+      return shareCacheRef.current.url;
+    }
+
+    const canvas = await getCanvas();
+    const blob = await canvasToBlob(canvas);
+    if (!blob) throw new Error("Capture image impossible");
+
+    const formData = new FormData();
+    formData.append("image", blob, filename);
+    formData.append("cardText", cardText);
+    formData.append("shareText", buildShareText(shareLink));
+    formData.append("targetUrl", shareLink);
+    formData.append("isMessage", String(isMessage));
+
+    const res = await fetch("/api/shares", {
+      method: "POST",
+      body: formData,
+    });
+    if (!res.ok) throw new Error("Publication du lien de partage impossible");
+
+    const payload = await res.json();
+    const pageUrl = payload?.data?.sharePageUrl;
+    if (!pageUrl) throw new Error("Lien de partage invalide");
+
+    shareCacheRef.current = { key: shareCacheKey, url: pageUrl };
+    return pageUrl;
+  }, [buildShareText, cardText, filename, getCanvas, isMessage, shareCacheKey, shareLink]);
+
+  const shareViaNative = useCallback(async ({ url, text }) => {
+    if (!cardRef.current || typeof navigator === "undefined" || typeof navigator.share !== "function") {
+      return { status: "unsupported", canvas: null };
+    }
+
+    const canvas = await getCanvas();
+    const blob = await canvasToBlob(canvas);
+    if (!blob) return { status: "unsupported", canvas };
+
+    const file = new File([blob], filename, { type: "image/png" });
+    const payloads = [
+      url ? { files: [file], title: "AnonBox", text, url } : null,
+      text ? { files: [file], title: "AnonBox", text } : null,
+      { files: [file], title: "AnonBox" },
+    ].filter(Boolean);
+
+    for (const payload of payloads) {
+      try {
+        if (navigator.canShare) {
+          let canUsePayload = false;
+          try {
+            canUsePayload = navigator.canShare(payload);
+          } catch {
+            canUsePayload = false;
+          }
+          if (!canUsePayload) continue;
+        }
+        await navigator.share(payload);
+        return { status: "shared", canvas };
+      } catch (e) {
+        if (e?.name === "AbortError") return { status: "aborted", canvas };
+      }
+    }
+
+    return { status: "unsupported", canvas };
+  }, [filename, getCanvas]);
+
   /* ── Télécharger ── */
   const handleDownload = async () => {
     if (!cardRef.current || busy) return;
@@ -103,8 +178,30 @@ export function SharePromptCard({ prompt, message, publicLink, userHandle, onClo
     if (!cardRef.current || busy) return;
     setBusy(true);
     try {
-      downloadCanvas(await getCanvas(), filename);
-      await navigator.clipboard.writeText(shareLink);
+      let effectiveLink = shareLink;
+      try { effectiveLink = await createSharePage(); } catch {}
+      const effectiveText = buildShareText(effectiveLink);
+
+      const nativeResult = await shareViaNative({ url: effectiveLink, text: effectiveText });
+      if (nativeResult.status === "shared") {
+        setGuide({
+          color: "#E1306C",
+          emoji: "📸",
+          title: "Instagram Story",
+          steps: [
+            "La feuille de partage s'est ouverte avec l'image",
+            "Le lien de ta question est inclus/copiable",
+            'Si besoin, ajoute un sticker "Lien" dans Instagram',
+          ],
+          cta: { label: "Ouvrir Instagram", href: "instagram://story-camera" },
+        });
+        return;
+      }
+      if (nativeResult.status === "aborted") return;
+
+      const canvas = nativeResult.canvas ?? await getCanvas();
+      downloadCanvas(canvas, filename);
+      await navigator.clipboard.writeText(effectiveLink);
       setCopied(true);
       setTimeout(() => setCopied(false), 3000);
       setGuide({
@@ -127,42 +224,63 @@ export function SharePromptCard({ prompt, message, publicLink, userHandle, onClo
     if (!cardRef.current || busy) return;
     setBusy(true);
     try {
-      downloadCanvas(await getCanvas(), filename);
-      const text = isMessage
-       ? `J'ai reçu ce message anonyme 👇\n\n"${cardText}"`
-      : `${cardText}\n\n👉 Réponds anonymement : ${shareLink}`;
+      let effectiveLink = shareLink;
+      try { effectiveLink = await createSharePage(); } catch {}
+      const text = buildShareText(effectiveLink);
       window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, "_blank");
       setGuide({
         color: "#25D366",
         emoji: "💬",
         title: "WhatsApp",
-        steps: [
-          "L'image a été téléchargée dans ta galerie",
-          "WhatsApp s'ouvre avec le texte + lien prêt",
-          "Joins l'image depuis ta galerie si tu veux l'inclure",
-        ],
+        steps: effectiveLink !== shareLink
+          ? [
+              "WhatsApp s'ouvre avec ton texte + lien prêt",
+              "Le lien contient l'image de la carte en aperçu",
+              "Envoie le message pour partager image + lien en une fois",
+            ]
+          : [
+              "WhatsApp s'ouvre avec le texte + lien prêt",
+              "Si l'image n'apparaît pas, le lien public n'est pas disponible",
+              "Vérifie que ton site est en URL HTTPS publique (pas localhost)",
+            ],
         cta: null,
       });
     } finally { setBusy(false); }
   };
 
   /* ── Facebook ── */
-  const handleFacebook = () => {
-    window.open(
-      `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareLink)}&quote=${encodeURIComponent(cardText)}`,
-      "_blank", "width=600,height=500"
-    );
-    setGuide({
-      color: "#1877F2",
-      emoji: "📘",
-      title: "Facebook",
-      steps: [
-        "Facebook génère automatiquement un aperçu de ton lien",
-        "Tu peux ajouter un commentaire avant de publier",
-        "Pour une story avec image : télécharge l'image d'abord",
-      ],
-      cta: null,
-    });
+  const handleFacebook = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      let effectiveLink = shareLink;
+      try { effectiveLink = await createSharePage(); } catch {}
+
+      window.open(
+        `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(effectiveLink)}&quote=${encodeURIComponent(cardText)}`,
+        "_blank",
+        "width=600,height=500"
+      );
+      setGuide({
+        color: "#1877F2",
+        emoji: "📘",
+        title: "Facebook",
+        steps: effectiveLink !== shareLink
+          ? [
+              "Facebook reçoit ton lien de partage AnonBox",
+              "L'image de la carte s'affiche dans l'aperçu du lien",
+              "Ajoute un commentaire puis publie",
+            ]
+          : [
+              "Facebook reçoit ton lien",
+              "Pour forcer l'image, ton site doit être public (pas localhost)",
+              "Sinon télécharge l'image et joins-la manuellement",
+            ],
+        cta: null,
+      });
+    } finally {
+      setBusy(false);
+    }
   };
 
   /* ── Partage natif ── */
@@ -170,18 +288,17 @@ export function SharePromptCard({ prompt, message, publicLink, userHandle, onClo
     if (!cardRef.current || busy) return;
     setBusy(true);
     try {
-      const canvas = await getCanvas();
-      const blob   = await canvasToBlob(canvas);
-      const file   = new File([blob], filename, { type: "image/png" });
-      if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ 
-          files: [file], 
-          title: "AnonBox", 
-          text: isMessage ? cardText : undefined, 
-          url: isMessage ? undefined : shareLink });
-      } else {
-        downloadCanvas(canvas, filename);
-      }
+      let effectiveLink = shareLink;
+      try { effectiveLink = await createSharePage(); } catch {}
+
+      const nativeResult = await shareViaNative({
+        url: effectiveLink,
+        text: buildShareText(effectiveLink),
+      });
+      if (nativeResult.status === "shared" || nativeResult.status === "aborted") return;
+
+      const fallbackCanvas = nativeResult.canvas ?? await getCanvas();
+      downloadCanvas(fallbackCanvas, filename);
     } catch (e) {
       if (e.name !== "AbortError") console.error(e);
     } finally { setBusy(false); }
