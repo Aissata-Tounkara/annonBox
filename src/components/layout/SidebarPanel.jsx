@@ -21,15 +21,15 @@ import { ROUTES } from "@/lib/utils/constants";
  * - setSharePromptId : (id: number | null) => void
  * - selectedPrompt : Prompt | undefined
  * - copiedLink     : boolean
- * - shareLink      : string
- * - whatsappText   : string
  * - userHandle     : string
  * - onAddPrompt    : () => void
  * - onRemovePrompt : (id: number) => void
  * - onCopyLink     : () => void
- * - onSocialShare  : () => void
  * - onPickRandom   : () => void
  * - onOpenShareCard: () => void
+ * - onShareInstagramCard: () => void
+ * - onShareWhatsAppCard : () => void
+ * - onShareFacebookCard : () => void
  */
 export default function SidebarPanel({
   stats,
@@ -44,15 +44,15 @@ export default function SidebarPanel({
   setSharePromptId,
   selectedPrompt,
   copiedLink,
-  shareLink,
-  whatsappText,
   userHandle,
   onAddPrompt,
   onRemovePrompt,
   onCopyLink,
-  onSocialShare,
   onPickRandom,
   onOpenShareCard,
+  onShareInstagramCard,
+  onShareWhatsAppCard,
+  onShareFacebookCard,
 }) {
   const { totalCount, unreadCount } = stats;
 
@@ -198,39 +198,21 @@ export default function SidebarPanel({
         </Button>
 
         {/* Instagram */}
-        <Button variant="instagram" asChild className="w-full">
-          <a
-            href={`https://www.instagram.com/stories/create/?url=${encodeURIComponent(shareLink)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={onSocialShare}
-          >
-            Partager sur Instagram
-          </a>
+        <Button variant="instagram" className="w-full" onClick={onShareInstagramCard}>
+          Partager sur Instagram
         </Button>
 
         {/* WhatsApp + Facebook */}
         <div className="grid grid-cols-2 gap-3">
-          <Button variant="whatsapp" asChild>
-            <a
-              href={`https://api.whatsapp.com/send?text=${encodeURIComponent(whatsappText)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full rounded-xl py-2.5 text-xs"
-              onClick={onSocialShare}
-            >
-              WhatsApp
-            </a>
+          <Button
+            variant="whatsapp"
+            className="w-full rounded-xl py-2.5 text-xs"
+            onClick={onShareWhatsAppCard}
+          >
+            WhatsApp
           </Button>
-          <Button variant="facebook" asChild>
-            <a
-              href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareLink)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={onSocialShare}
-            >
-              Facebook
-            </a>
+          <Button variant="facebook" onClick={onShareFacebookCard}>
+            Facebook
           </Button>
         </div>
       </div>

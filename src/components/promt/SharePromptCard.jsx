@@ -54,9 +54,18 @@ function canvasToBlob(canvas) {
   return new Promise((res) => canvas.toBlob(res, "image/png"));
 }
 
-export function SharePromptCard({ prompt, message, publicLink, userHandle, onClose }) {
+export function SharePromptCard({
+  prompt,
+  message,
+  publicLink,
+  userHandle,
+  autoSharePlatform = null,
+  onAutoShareDone,
+  onClose,
+}) {
   const cardRef = useRef(null);
   const shareCacheRef = useRef({ key: "", url: "" });
+  const autoShareTriggeredRef = useRef(false);
 
   const [themeIdx, setThemeIdx] = useState(0);
   const theme = THEMES[themeIdx];
@@ -178,6 +187,30 @@ export function SharePromptCard({ prompt, message, publicLink, userHandle, onClo
     return { status: "unsupported", canvas };
   }, [filename, getCanvas]);
 
+  const shareImageOnlyViaNative = useCallback(async () => {
+    if (!cardRef.current || typeof navigator === "undefined" || typeof navigator.share !== "function") {
+      return { status: "unsupported", canvas: null };
+    }
+
+    const canvas = await getCanvas();
+    const blob = await canvasToBlob(canvas);
+    if (!blob) return { status: "unsupported", canvas };
+
+    const file = new File([blob], filename, { type: "image/png" });
+    const payload = { files: [file], title: "AnonBox" };
+
+    try {
+      if (navigator.canShare && !navigator.canShare(payload)) {
+        return { status: "unsupported", canvas };
+      }
+      await navigator.share(payload);
+      return { status: "shared", canvas };
+    } catch (e) {
+      if (e?.name === "AbortError") return { status: "aborted", canvas };
+      return { status: "unsupported", canvas };
+    }
+  }, [filename, getCanvas]);
+
   /* ── Télécharger ── */
   const handleDownload = async () => {
     if (!cardRef.current || busy) return;
@@ -192,17 +225,22 @@ export function SharePromptCard({ prompt, message, publicLink, userHandle, onClo
     setBusy(true);
     try {
       const { link: effectiveLink, hasPreviewCard } = await resolveShareLink();
-      const effectiveText = buildShareText(effectiveLink);
-
-      const nativeResult = await shareViaNative({ url: effectiveLink, text: effectiveText });
+      const nativeResult = await shareImageOnlyViaNative();
       if (nativeResult.status === "shared") {
+        try {
+          await navigator.clipboard.writeText(effectiveLink);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 3000);
+        } catch {
+          // Clipboard peut échouer selon permissions navigateur.
+        }
         setGuide({
           color: "#E1306C",
           emoji: "📸",
           title: "Instagram Story",
           steps: [
             "La feuille de partage s'est ouverte avec l'image",
-            "Le lien de ta question est inclus/copiable",
+            "Le lien a été copié dans ton presse-papier",
             'Si besoin, ajoute un sticker "Lien" dans Instagram',
           ],
           cta: { label: "Ouvrir Instagram", href: "instagram://story-camera" },
@@ -319,6 +357,37 @@ export function SharePromptCard({ prompt, message, publicLink, userHandle, onClo
       if (e.name !== "AbortError") console.error(e);
     } finally { setBusy(false); }
   };
+
+  useEffect(() => {
+    if (!autoSharePlatform || autoShareTriggeredRef.current || busy) return;
+
+    autoShareTriggeredRef.current = true;
+
+    const runAutoShare = async () => {
+      try {
+        if (autoSharePlatform === "instagram") await handleInstagram();
+        else if (autoSharePlatform === "whatsapp") await handleWhatsApp();
+        else if (autoSharePlatform === "facebook") await handleFacebook();
+      } finally {
+        if (onAutoShareDone) onAutoShareDone();
+      }
+    };
+
+    runAutoShare();
+  }, [
+    autoSharePlatform,
+    busy,
+    handleFacebook,
+    handleInstagram,
+    handleWhatsApp,
+    onAutoShareDone,
+  ]);
+
+  useEffect(() => {
+    if (!autoSharePlatform) {
+      autoShareTriggeredRef.current = false;
+    }
+  }, [autoSharePlatform]);
 
   /* ────────────────────────────────────────────────────────────────────── */
   return (

@@ -28,6 +28,7 @@ export default function DashboardPage() {
   const [sharePromptId, setSharePromptId]   = useState(null);
   const [copiedLink, setCopiedLink]         = useState(false);
   const [showShareCard, setShowShareCard]   = useState(false);
+  const [shareCardIntent, setShareCardIntent] = useState(null);
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [sidebarOpen, setSidebarOpen]       = useState(false);
 
@@ -98,13 +99,10 @@ export default function DashboardPage() {
     if (created?.id) setSharePromptId(created.id);
   };
 
-  const handleOpenShareCard = () => {
+  const handleOpenShareCard = (intent = null) => {
     if (selectedPrompt) sharePrompt(selectedPrompt.id);
+    setShareCardIntent(intent);
     setShowShareCard(true);
-  };
-
-  const handleSocialShare = () => {
-    if (selectedPrompt) sharePrompt(selectedPrompt.id);
   };
 
   const copyShareLink = () => {
@@ -129,9 +127,6 @@ export default function DashboardPage() {
   const publicLink     = `${origin}${ROUTES.PUBLIC_PROFILE(user?.handle ?? "")}`;
   const selectedPrompt = prompts.find((p) => p.id === sharePromptId);
   const shareLink      = selectedPrompt?.share_url ?? publicLink;
-  const whatsappText   = selectedPrompt
-    ? `Réponds à ma question anonymement :\n"${selectedPrompt.question_text}"\n👉 ${shareLink}`
-    : `Envoie-moi un message anonyme 👉 ${shareLink}`;
 
   // Props communes pour SidebarPanel
   const sidebarProps = {
@@ -147,15 +142,15 @@ export default function DashboardPage() {
     setSharePromptId,
     selectedPrompt,
     copiedLink,
-    shareLink,
-    whatsappText,
     userHandle: user?.handle,
     onAddPrompt: handleAddPrompt,
     onRemovePrompt: removePrompt,
     onCopyLink: copyShareLink,
-    onSocialShare: handleSocialShare,
     onPickRandom: pickRandomQuestion,
     onOpenShareCard: handleOpenShareCard,
+    onShareInstagramCard: () => handleOpenShareCard("instagram"),
+    onShareWhatsAppCard: () => handleOpenShareCard("whatsapp"),
+    onShareFacebookCard: () => handleOpenShareCard("facebook"),
   };
 
   return (
@@ -167,7 +162,12 @@ export default function DashboardPage() {
           prompt={selectedPrompt}
           publicLink={publicLink}
           userHandle={user?.handle}
-          onClose={() => setShowShareCard(false)}
+          autoSharePlatform={shareCardIntent}
+          onAutoShareDone={() => setShareCardIntent(null)}
+          onClose={() => {
+            setShowShareCard(false);
+            setShareCardIntent(null);
+          }}
         />
       )}
 
